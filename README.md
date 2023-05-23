@@ -11,7 +11,7 @@ Small python app that publishes a randomly selected image from a local folder to
 
 # usage
 1. (clone repository)
-2. create a file ".env" and enter these lines (use your onw URL and mastodon app token):
+2. create a file ".env" and enter these lines (use your own URL and mastodon app token):
 
     ```
     MASTODON_TOKEN=<your token here
