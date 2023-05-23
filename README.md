@@ -18,7 +18,7 @@ Small python app that publishes a randomly selected image from a local folder to
     MASTODON_URL=<your mastodon server url here>
     ```
 
-    ... more to come ...
+    ... more to come soon ...
     
 
 # use multiple image for one toot
