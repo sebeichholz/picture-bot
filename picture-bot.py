@@ -4,12 +4,34 @@ from pathlib import Path
 import os
 import re
 from dotenv import load_dotenv
+import sys
 
 load_dotenv()
+
+if (len(sys.argv)!=2 and len(sys.argv)!=3):
+    print('ERROR: Wrong number of arguments.\nUsage: python picture-bot.py <imageFolder> <doIt[optional]>)')
+    sys.exit()
 
 #these values are read from a file called .env  (see README.MD)
 mastodon_token = os.getenv("MASTODON_TOKEN")
 mastodon_url = os.getenv("MASTODON_URL")
+
+errorMessage = 'Create a .env file like this:\nMASTODON_TOKEN=<your token here>\nMASTODON_URL=<your mastodon server url here>'
+if mastodon_token is None:
+    print('ERROR: No mastodon-token found. ')
+    print(errorMessage)
+    sys.exit()
+    
+if mastodon_url is None:
+    print('ERROR: No mastodon-URL found. ')
+    print(errorMessage)
+    sys.exit()
+
+dir = sys.argv[1] #'/Users/sebastian/_TEMP/kultmags/artikel';
+
+if not os.path.isdir(dir):
+    print('ERROR: No valid directory: ' + dir)
+    sys.exit()   
 
 def transformFilename(f):
     if str(f).endswith('__1'):
@@ -24,16 +46,15 @@ def transformFilename(f):
     f = str(f).strip();
     return f;
 
-dir = '/Users/sebastian/_TEMP/kultmags/artikel';
+doIt = False
+if len(sys.argv)==3:
+    doIt = (sys.argv[2] == 'doIt')
 
+print('doIt: ' + str(doIt))
+    
 RED_HEART = '\u2764';
 
-doIt = False;
-doUpload = False;
-
-doIt = True;
 doUpload = True;
-
 
 statusText = ''
 
@@ -53,11 +74,9 @@ for file in list(fileList):
         #print('ok')
         pass
 
-print(len(fileList));
-
-print('remaining fileList: ');
-for file in fileList:
-    print(' ' + file.stem)
+print(str(len(fileList)) + ' files found.');
+if len(fileList)==0:
+    print('ERROR: no files found in "' + dir + '"')
    
 statusText = statusText[0:400]     
 
@@ -109,32 +128,15 @@ if (fileToUse.name.endswith('__1.jpg')
             filenamesToUse.append(newFile);
     for f in filenamesToUse:
         print('  ' + f)
-
-    '''
-    String filenameWithAbsolutePathWithoutNumber = filenameWithAbsolutePath
-        .replace("__1.jpg", "")
-        .replace("__2.jpg", "")
-        .replace("__3.jpg", "")
-        .replace("__4.jpg", "");
-    
-    for (int i=1; i<=4; i++) {
-        String a = filenameWithAbsolutePathWithoutNumber + "__" + i + ".jpg";
-        if (new File(a).exists()) {
-            filenamesToUse.add(new File(a).getAbsolutePath());
-        }
-    }
-    '''
     
 
 else:
     filenamesToUse.append(str(fileToUse));
 
 
-
-
 mediaIds = []
 
-if doUpload:
+if doUpload and doIt:
     for f in filenamesToUse:
         m1dict = mastodon.media_post(
             media_file=f, 
