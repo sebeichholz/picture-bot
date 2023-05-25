@@ -90,7 +90,7 @@ while not validfFileFound:
     rand = random.randint(0, len(fileList)-1)
     randomFile = fileList[rand]
     print('file: ' + str(randomFile))    
-    filenameUsed = str(randomFile) + '.used' + ('.real' if doIt else '.sim');
+    filenameUsed = str(randomFile) + '.usedmastodon' + ('.real' if doIt else '.sim');
     print('filenameUsed: ' + str(filenameUsed))
     if os.path.isfile(filenameUsed):
         print('file was already used!');
