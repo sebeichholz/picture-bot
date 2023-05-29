@@ -46,6 +46,9 @@ def transformFilename(f):
     f = str(f).strip();
     return f;
 
+
+
+
 doIt = False
 if len(sys.argv)==3:
     doIt = (sys.argv[2] == 'doIt')
@@ -54,16 +57,9 @@ print('doIt: ' + str(doIt))
     
 RED_HEART = '\u2764';
 
-doUpload = True;
-
 statusText = ''
 
-mastodon = Mastodon(api_base_url = mastodon_url, 
-                    access_token = mastodon_token);
-
 fileList = list(Path(dir).rglob("*.[jJ][pP][gG]"))
-
-print(len(fileList))
 
 for file in list(fileList):
     #print('checking file ' + file.stem)
@@ -74,7 +70,7 @@ for file in list(fileList):
         #print('ok')
         pass
 
-print(str(len(fileList)) + ' files found.');
+print(str(len(fileList)) + ' valid files found.');
 if len(fileList)==0:
     print('ERROR: no files found in "' + dir + '"')
    
@@ -134,28 +130,36 @@ else:
     filenamesToUse.append(str(fileToUse));
 
 
-mediaIds = []
 
-if doUpload and doIt:
-    for f in filenamesToUse:
-        m1dict = mastodon.media_post(
-            media_file=f, 
-            mime_type='image/jpeg', 
-            synchronous=True,
-            description=Path(f).stem
+def mastodon(filenamesForMastodon: list[str], statusTextForMastodon: str):
+    mastodon = Mastodon(api_base_url = mastodon_url, 
+                    access_token = mastodon_token); 
+    mediaIds = []
+
+    if doIt:
+        for f in filenamesForMastodon:
+            m1dict = mastodon.media_post(
+                media_file=f, 
+                mime_type='image/jpeg', 
+                synchronous=True,
+                description=Path(f).stem
+            );
+            mediaIds.append(m1dict.id)
+    if doIt:
+        mastodon.status_post(status=
+            statusTextForMastodon + ' ' + RED_HEART
+            , media_ids=mediaIds
         );
-        mediaIds.append(m1dict.id)
 
 if not doIt:
     print('=== SIMULATION MODE ONLY ====== ')
 print('Posting Status: ' + ('' if doIt else ' (simulation mode)'))
 print(statusText)
 
-if doIt:
-    mastodon.status_post(status=
-        statusText + ' ' + RED_HEART
-        , media_ids=mediaIds
-    );
+
+mastodon(filenamesToUse, statusText)
+
+
     
 
 
