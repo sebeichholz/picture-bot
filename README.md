@@ -16,6 +16,9 @@ Small python app that publishes a randomly selected image from a local folder to
     ```
     MASTODON_TOKEN=<your token here
     MASTODON_URL=<your mastodon server url here>
+
+    #optional choose one ore more Hashtags that will be appended at the end of the post:
+    HASHTAGS=#Retrogaming #Games
     ```
 
     ... more to come soon ...

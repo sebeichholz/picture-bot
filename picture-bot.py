@@ -15,6 +15,8 @@ if (len(sys.argv)!=2 and len(sys.argv)!=3):
 #these values are read from a file called .env  (see README.MD)
 mastodon_token = os.getenv("MASTODON_TOKEN")
 mastodon_url = os.getenv("MASTODON_URL")
+HASHTAGS = os.getenv("HASHTAGS")
+
 
 errorMessage = 'Create a .env file like this:\nMASTODON_TOKEN=<your token here>\nMASTODON_URL=<your mastodon server url here>'
 if mastodon_token is None:
@@ -130,6 +132,8 @@ else:
     filenamesToUse.append(str(fileToUse));
 
 
+if HASHTAGS is not None:
+    statusText = statusText + "\n" + HASHTAGS
 
 def mastodon(filenamesForMastodon: list[str], statusTextForMastodon: str):
     mastodon = Mastodon(api_base_url = mastodon_url, 
