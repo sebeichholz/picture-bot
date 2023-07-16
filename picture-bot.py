@@ -132,6 +132,8 @@ else:
     filenamesToUse.append(str(fileToUse));
 
 
+statusText = statusText + ' ' + RED_HEART
+
 if HASHTAGS is not None:
     statusText = statusText + "\n" + HASHTAGS
 
@@ -151,7 +153,7 @@ def mastodon(filenamesForMastodon: list[str], statusTextForMastodon: str):
             mediaIds.append(m1dict.id)
     if doIt:
         mastodon.status_post(status=
-            statusTextForMastodon + ' ' + RED_HEART
+            statusTextForMastodon
             , media_ids=mediaIds
         );
 
