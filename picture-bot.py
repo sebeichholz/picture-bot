@@ -5,31 +5,43 @@ import os
 import re
 from dotenv import load_dotenv
 import sys
+import requests
+from datetime import datetime, timezone
+import json
+
 
 load_dotenv()
+
+def debug(text):
+    #print(text)
+    pass
+
+now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+print("-------")
 
 if (len(sys.argv)!=2 and len(sys.argv)!=3):
     print('ERROR: Wrong number of arguments.\nUsage: python picture-bot.py <imageFolder> <doIt[optional]>)')
     sys.exit()
 
 #these values are read from a file called .env  (see README.MD)
-mastodon_token = os.getenv("MASTODON_TOKEN")
-mastodon_url = os.getenv("MASTODON_URL")
+bluesky_handle = os.getenv("BLUESKY_HANDLE")
+bluesky_app_password = os.getenv("BLUESKY_APP_PASSWORD")
 HASHTAGS = os.getenv("HASHTAGS")
 
 
-errorMessage = 'Create a .env file like this:\nMASTODON_TOKEN=<your token here>\nMASTODON_URL=<your mastodon server url here>'
-if mastodon_token is None:
-    print('ERROR: No mastodon-token found. ')
+errorMessage = 'Create a .env file like this:\BLUESKY_HANDLE=<your handle here>\BLUESKY_APP_PASSWORD=<your bluesky password here>'
+if bluesky_handle is None:
+    print('ERROR: No bluesky_handle found. ')
     print(errorMessage)
     sys.exit()
     
-if mastodon_url is None:
-    print('ERROR: No mastodon-URL found. ')
+if bluesky_app_password is None:
+    print('ERROR: No bluesky_app_password found. ')
     print(errorMessage)
     sys.exit()
 
-dir = sys.argv[1] #'/Users/sebastian/_TEMP/kultmags/artikel';
+dir = sys.argv[1] 
 
 if not os.path.isdir(dir):
     print('ERROR: No valid directory: ' + dir)
@@ -52,10 +64,10 @@ def transformFilename(f):
 
 
 doIt = False
+doIt = True
+
 if len(sys.argv)==3:
     doIt = (sys.argv[2] == 'doIt')
-
-print('doIt: ' + str(doIt))
     
 RED_HEART = '\u2764';
 
@@ -72,7 +84,7 @@ for file in list(fileList):
         #print('ok')
         pass
 
-print(str(len(fileList)) + ' valid files found.');
+debug(str(len(fileList)) + ' valid files found.');
 if len(fileList)==0:
     print('ERROR: no files found in "' + dir + '"')
    
@@ -84,29 +96,28 @@ fileToUse = None;
 retries = 0
 while not validfFileFound:
     retries = retries+1
-    print('')
     rand = random.randint(0, len(fileList)-1)
     randomFile = fileList[rand]
-    print('file: ' + str(randomFile))    
-    filenameUsed = str(randomFile) + '.usedmastodon' + ('.real' if doIt else '.sim');
-    print('filenameUsed: ' + str(filenameUsed))
+    debug('file: ' + str(randomFile))    
+    filenameUsed = str(randomFile) + '.usedbsky' + ('.real' if doIt else '.sim');
+    debug('filenameUsed: ' + str(filenameUsed))
     if os.path.isfile(filenameUsed):
-        print('file was already used!');
+        debug('file was already used!');
         fileList.remove(randomFile);
-        print('Files for selection: ' + str(len(fileList)));
+        debug('Files for selection: ' + str(len(fileList)));
         continue;
     try:
         open(filenameUsed, 'w').close()
     except OSError:
-        print('Failed creating the file')
+        debug('Failed creating the file')
     else:
-        print('File created')
+        debug('File created')
     validfFileFound = True
     fileToUse = randomFile
 
-print('retries: ' + str(retries))
-print('validFile: ' + fileToUse.stem)
-print('transformed: ' + transformFilename(fileToUse.stem))
+debug('retries: ' + str(retries))
+debug('validFile: ' + fileToUse.stem)
+debug('transformed: ' + transformFilename(fileToUse.stem))
 
 statusText = transformFilename(fileToUse.stem);
 
@@ -116,16 +127,16 @@ if (fileToUse.name.endswith('__1.jpg')
     or fileToUse.name.endswith('__3.jpg')
     or fileToUse.name.endswith('__4.jpg')):
     
-    print(str(fileToUse))
+    debug(str(fileToUse))
     filenameWithoutNumber = str(fileToUse)[:len(str(fileToUse))-7];
-    print('filenameWithoutNumber: ' + filenameWithoutNumber);
+    debug('filenameWithoutNumber: ' + filenameWithoutNumber);
     
     for suffix in ['__1.jpg','__2.jpg','__3.jpg','__4.jpg']:
         newFile = filenameWithoutNumber + suffix;
         if os.path.isfile(newFile):
             filenamesToUse.append(newFile);
     for f in filenamesToUse:
-        print('  ' + f)
+        debug('  ' + f)
     
 
 else:
@@ -137,34 +148,103 @@ statusText = statusText + ' ' + RED_HEART
 if HASHTAGS is not None:
     statusText = statusText + "\n" + HASHTAGS
 
-def mastodon(filenamesForMastodon: list[str], statusTextForMastodon: str):
-    mastodon = Mastodon(api_base_url = mastodon_url, 
-                    access_token = mastodon_token); 
+def postImage(filenamesForMastodon: list[str], statusTextForMastodon: str):
+
     mediaIds = []
 
     if doIt:
+        
+        resp = requests.post(
+            "https://bsky.social/xrpc/com.atproto.server.createSession",
+            timeout=10,
+            json={"identifier": bluesky_handle, "password": bluesky_app_password},
+        )
+        resp.raise_for_status()
+        session = resp.json()
+        
+        imgNumber = 0
         for f in filenamesForMastodon:
-            m1dict = mastodon.media_post(
-                media_file=f, 
-                mime_type='image/jpeg', 
-                synchronous=True,
-                description=Path(f).stem
-            );
-            mediaIds.append(m1dict.id)
-    if doIt:
-        mastodon.status_post(status=
-            statusTextForMastodon
-            , media_ids=mediaIds
-        );
+            basename = os.path.basename(f)
+            print("basename: " + basename)
+            imgNumber = imgNumber + 1
+            #read image file:
+            with open(f, "rb") as f:
+                img_bytes = f.read()
+
+            # this size limit is specified in the app.bsky.embed.images lexicon
+            if len(img_bytes) > 1000000:
+                raise Exception(
+                    f"image file size too large. 1000000 bytes maximum, got: {len(img_bytes)}"
+                )            
+            #post image:
+            success = False
+            tries = 0
+            while not success:
+                tries = tries + 1
+                try:
+                    print("Trying to upload image [" + basename + "] - retries: " + str(tries))
+                    resp = requests.post(
+                        "https://bsky.social/xrpc/com.atproto.repo.uploadBlob",
+                        timeout=5,
+                        headers={
+                            "Content-Type": "image/jpg",
+                            "Authorization": "Bearer " + session["accessJwt"],
+                        },
+                        data=img_bytes,
+                    )
+                    resp.raise_for_status()
+                    blob = resp.json()["blob"]
+                    success = True
+                    debug("Image posted successfully")
+                    debug(blob)
+                    mediaId = {
+                        "alt": statusText + " Datei " + str(imgNumber),
+                        "image": blob,
+                        "size": len(img_bytes),
+                    }   
+                    debug("mediaId: " + str(mediaId))
+                    mediaIds.append(mediaId)
+                except Exception as e: # work on python 3.x
+                    print('Failed: %s', e)                    
+                    pass            
+    
+        debug(mediaIds)
+    
+    
+        post = {
+            "$type": "app.bsky.feed.post",
+            "text": statusText ,
+            "createdAt": now,
+        }
+        post["embed"] = {
+            "$type": "app.bsky.embed.images",
+            "images": mediaIds
+        }
+        
+        
+        json_formatted_str = json.dumps(post, indent=2)
+        debug(json_formatted_str)        
+        
+        resp = requests.post(
+            "https://bsky.social/xrpc/com.atproto.repo.createRecord",
+            headers={"Authorization": "Bearer " + session["accessJwt"]},
+            json={
+                "repo": session["did"],
+                "collection": "app.bsky.feed.post",
+                "record": post,
+            },
+        )
+        debug(json.dumps(resp.json(), indent=2))
+        resp.raise_for_status()        
 
 if not doIt:
     print('=== SIMULATION MODE ONLY ====== ')
 print('Posting Status: ' + ('' if doIt else ' (simulation mode)'))
 print(statusText)
 
+postImage(filenamesToUse, statusText)
 
-mastodon(filenamesToUse, statusText)
-
+print("-------")
 
     
 
