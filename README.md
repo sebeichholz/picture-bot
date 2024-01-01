@@ -1,5 +1,5 @@
 # picture-bot
-Small python app that publishes a randomly selected image from a local folder to mastodon
+Small python app that publishes a randomly selected image from a local folder to bluesky
 
 # features
 1. scan a given directory (and recursive all subdirectories) for image files and select one random image
