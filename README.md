@@ -11,17 +11,15 @@ Small python app that publishes a randomly selected image from a local folder to
 
 # usage
 1. (clone repository)
-2. create a file ".env" and enter these lines (use your own URL and mastodon app token):
+2. create a file ".env" (or copy it from .evn.tpl) and enter these lines:
 
     ```
-    MASTODON_TOKEN=<your token here
-    MASTODON_URL=<your mastodon server url here>
+    BLUESKY_HANDLE = "<youd bluesky handle>"
+    BLUESKY_APP_PASSWORD = "<your app password>"
 
     #optional choose one ore more Hashtags that will be appended at the end of the post:
-    HASHTAGS=#Retrogaming #Games
+    HASHTAGS="<yout hashtags here, e.g. '#Retrogames #Retrogaming'>"
     ```
-
-    ... more to come soon ...
     
 
 # use multiple image for one toot
